@@ -137,7 +137,8 @@ metadata.json (GPS)   →  Geo Intelligence
 ### Economic Model (`src/economic_model.py`)
 - **Fully transparent formula**:
   ```
-  Daily Sales = Inventory Value × Turnover Rate × Location Multiplier × Demand Factor
+  Daily Sales = (Visible Inventory × Uplift Factor)
+                × Turnover Rate × Location Multiplier × Demand Factor
   ```
 - All outputs are **ranges** (min, max)
 - Identifies **key drivers** in plain English
@@ -148,6 +149,7 @@ metadata.json (GPS)   →  Geo Intelligence
 - SKU anomaly detection
 - Metadata quality checks
 - Image quality assessment
+- Mandatory view coverage checks (shelf/counter/outside)
 
 ### Confidence Scoring (`src/confidence.py`)
 - Weighted combination of 4 components:
@@ -163,13 +165,13 @@ metadata.json (GPS)   →  Geo Intelligence
 ```json
 {
   "store_id": "store_1",
-  "daily_sales_range": [245.70, 2156.76],
-  "monthly_revenue_range": [7371.00, 64702.80],
-  "monthly_income_range": [737.10, 12940.56],
+  "daily_sales_range": [6000, 9000],
+  "monthly_revenue_range": [180000, 270000],
+  "monthly_income_range": [25000, 45000],
   "confidence_score": 0.72,
-  "risk_flags": [],
+  "risk_flags": ["inventory_footfall_mismatch", "limited_view_coverage"],
   "key_drivers": [...],
-  "recommendation": "..."
+  "recommendation": "needs_verification"
 }
 ```
 

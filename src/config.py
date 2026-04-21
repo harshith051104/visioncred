@@ -80,9 +80,14 @@ FOOTFALL_BASE = {
 
 # ─── Economic Model Parameters ────────────────────────────────────────────────
 # Inventory Turnover Rate: how many times daily inventory turns over
-# Kirana stores typically turn over 5-15% of visible inventory daily
-TURNOVER_RATE_LOW = 0.05   # Conservative: 5% daily turnover
-TURNOVER_RATE_HIGH = 0.15  # Optimistic: 15% daily turnover
+# Kirana throughput is high; visible shelf stock is only a subset of working stock.
+TURNOVER_RATE_LOW = 0.20   # Conservative turnover of effective inventory
+TURNOVER_RATE_HIGH = 0.45  # Optimistic turnover of effective inventory
+
+# Visible shelves typically represent only part of the total working inventory.
+# This uplift converts visible inventory estimate to effective operating stock.
+VISIBLE_TO_TOTAL_INVENTORY_LOW = 8.0
+VISIBLE_TO_TOTAL_INVENTORY_HIGH = 14.0
 
 # Demand Factor: seasonal/market demand multiplier
 DEMAND_FACTOR_LOW = 0.8

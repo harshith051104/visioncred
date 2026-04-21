@@ -226,6 +226,62 @@ class FraudDetector:
 
         return flags
 
+    def check_view_coverage(self, image_paths: List[Path]) -> List[Dict]:
+        """
+        Flag incomplete or biased image coverage across mandatory views.
+        """
+        flags = []
+        shelf_count = 0
+        counter_count = 0
+        outside_count = 0
+
+        for path in image_paths:
+            name = path.stem.lower()
+            if name.startswith("shelf"):
+                shelf_count += 1
+            elif name.startswith("counter"):
+                counter_count += 1
+            elif name.startswith("outside"):
+                outside_count += 1
+
+        missing_views = []
+        if shelf_count < 2:
+            missing_views.append("shelf")
+        if counter_count < 1:
+            missing_views.append("counter")
+        if outside_count < 1:
+            missing_views.append("outside")
+
+        if missing_views:
+            flags.append({
+                "type": "missing_mandatory_views",
+                "severity": "high",
+                "detail": (
+                    "Mandatory views are missing or underrepresented: "
+                    f"{', '.join(missing_views)}. "
+                    "This increases risk of selective photography."
+                ),
+                "recommendation": (
+                    "Collect 3-5 images covering shelves, counter, and "
+                    "storefront/street view before final underwriting."
+                ),
+            })
+
+        if len(image_paths) < 5:
+            flags.append({
+                "type": "limited_view_coverage",
+                "severity": "medium",
+                "detail": (
+                    f"Only {len(image_paths)} images provided; limited coverage "
+                    "can hide inventory and throughput patterns."
+                ),
+                "recommendation": (
+                    "Request additional angles and aisle-depth coverage."
+                ),
+            })
+
+        return flags
+
     def analyze(
         self,
         features: Dict,
@@ -266,28 +322,21 @@ class FraudDetector:
         all_flags.extend(
             self.check_low_image_quality(features)
         )
+        all_flags.extend(
+            self.check_view_coverage(image_paths)
+        )
 
         # Determine overall risk level
         severities = [f["severity"] for f in all_flags]
         if "high" in severities:
             overall_risk = "HIGH"
-            recommendation = (
-                "Multiple risk indicators detected. "
-                "Physical verification strongly recommended before "
-                "extending credit."
-            )
+            recommendation = "manual_review"
         elif "medium" in severities:
             overall_risk = "MEDIUM"
-            recommendation = (
-                "Some anomalies detected. Proceed with caution. "
-                "Consider requesting additional documentation."
-            )
+            recommendation = "needs_verification"
         else:
             overall_risk = "LOW"
-            recommendation = (
-                "No significant anomalies detected. "
-                "Data appears consistent and reliable."
-            )
+            recommendation = "proceed"
 
         fraud_output = {
             "risk_flags": all_flags,

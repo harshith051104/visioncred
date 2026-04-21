@@ -20,6 +20,8 @@ from typing import Dict, List, Tuple
 from src.config import (
     TURNOVER_RATE_LOW,
     TURNOVER_RATE_HIGH,
+    VISIBLE_TO_TOTAL_INVENTORY_LOW,
+    VISIBLE_TO_TOTAL_INVENTORY_HIGH,
     DEMAND_FACTOR_LOW,
     DEMAND_FACTOR_HIGH,
     MARGIN_LOW,
@@ -38,10 +40,11 @@ class EconomicModel:
     The model uses a layered multiplication approach:
     
     Layer 1 — Inventory Base:
-        Start with estimated visible inventory value (from vision module).
+        Start with estimated visible inventory value (from vision module) and
+        uplift to effective operating inventory.
     
     Layer 2 — Turnover:
-        Apply daily turnover rate (5–15% of inventory sells daily).
+        Apply daily turnover rate on effective operating inventory.
     
     Layer 3 — Location:
         Multiply by location factor (urban stores sell more).
@@ -61,8 +64,8 @@ class EconomicModel:
         Estimate daily sales range.
         
         Formula:
-            Daily Sales = Inventory Value × Turnover Rate 
-                         × Location Multiplier × Demand Factor
+            Daily Sales = Effective Inventory × Turnover Rate
+                          × Location Multiplier × Demand Factor
         
         Args:
             features: Consolidated feature dictionary.
@@ -70,10 +73,14 @@ class EconomicModel:
         Returns:
             Tuple of (daily_sales_min, daily_sales_max) in INR.
         """
-        inv_low = features.get("inventory_value_low", 0)
-        inv_high = features.get("inventory_value_high", 0)
+        inv_low_visible = features.get("inventory_value_low", 0)
+        inv_high_visible = features.get("inventory_value_high", 0)
         loc_mult = features.get("location_multiplier", 1.0)
         footfall = features.get("geo_footfall_score", 0.5)
+
+        # Convert visible shelf inventory to effective operating inventory.
+        inv_low = inv_low_visible * VISIBLE_TO_TOTAL_INVENTORY_LOW
+        inv_high = inv_high_visible * VISIBLE_TO_TOTAL_INVENTORY_HIGH
 
         # Adjust demand factor based on footfall
         # Higher footfall → demand closer to high end
@@ -140,22 +147,26 @@ class EconomicModel:
         drivers = []
 
         # Inventory level
-        inv_avg = (
+        inv_avg_visible = (
             features.get("inventory_value_low", 0)
             + features.get("inventory_value_high", 0)
         ) / 2
+        inv_avg_effective = inv_avg_visible * (
+            (VISIBLE_TO_TOTAL_INVENTORY_LOW + VISIBLE_TO_TOTAL_INVENTORY_HIGH)
+            / 2
+        )
 
-        if inv_avg > 5000:
+        if inv_avg_effective > 75000:
             drivers.append(
-                f"High inventory level (Rs.{inv_avg:,.0f} estimated visible stock)"
+                f"High effective inventory base (Rs.{inv_avg_effective:,.0f})"
             )
-        elif inv_avg > 1000:
+        elif inv_avg_effective > 30000:
             drivers.append(
-                f"Moderate inventory level (Rs.{inv_avg:,.0f} estimated visible stock)"
+                f"Moderate effective inventory base (Rs.{inv_avg_effective:,.0f})"
             )
         else:
             drivers.append(
-                f"Low inventory level (Rs.{inv_avg:,.0f} estimated visible stock)"
+                f"Low effective inventory base (Rs.{inv_avg_effective:,.0f})"
             )
 
         # Shelf density impact
@@ -235,13 +246,17 @@ class EconomicModel:
             "key_drivers": key_drivers,
             "model_parameters": {
                 "turnover_rate_range": [TURNOVER_RATE_LOW, TURNOVER_RATE_HIGH],
+                "visible_to_total_inventory_uplift": [
+                    VISIBLE_TO_TOTAL_INVENTORY_LOW,
+                    VISIBLE_TO_TOTAL_INVENTORY_HIGH,
+                ],
                 "demand_factor_range": [DEMAND_FACTOR_LOW, DEMAND_FACTOR_HIGH],
                 "margin_range": [MARGIN_LOW, MARGIN_HIGH],
                 "location_multiplier": features.get("location_multiplier", 1.0),
                 "days_in_month": DAYS_IN_MONTH,
             },
             "formula": (
-                "Daily Sales = Inventory Value x Turnover Rate "
+                "Daily Sales = (Visible Inventory x Uplift Factor) x Turnover Rate "
                 "x Location Multiplier x Demand Factor"
             ),
         }

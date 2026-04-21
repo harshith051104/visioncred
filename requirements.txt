@@ -1,0 +1,24 @@
+# VisionCred: AI Credit Engine for Kirana Stores
+# Core dependencies
+
+# Vision & Image Processing
+ultralytics>=8.0.0
+opencv-python>=4.8.0
+Pillow>=10.0.0
+
+# Data & Computation
+numpy>=1.24.0
+pandas>=2.0.0
+
+# Geo Intelligence
+geopy>=2.4.0
+
+# Frontend
+gradio>=4.0.0
+
+# Logging & Utilities
+tqdm>=4.65.0
+colorama>=0.4.6
+
+# Image hashing for fraud detection
+imagehash>=4.3.0

@@ -196,9 +196,3 @@ All parameters are documented in `src/config.py`:
 3. **Modular**: Each module is independently testable
 4. **Robust**: Graceful handling of missing data, bad images, no GPS
 5. **Hackathon-ready**: Clean output, visual demos, comprehensive logging
-
----
-
-## 📝 License
-
-Built for hackathon / demo purposes.
